@@ -11,8 +11,8 @@ import java.awt.event.WindowEvent;
 
 public class CounterGUI extends Frame {
 	
-	Counter counter;
-	Label lblCount;
+	private Counter counter;
+	private Label lblCount;
 	
 	public CounterGUI(Counter counter, int startValue) {
 		this.counter = counter;
@@ -24,7 +24,7 @@ public class CounterGUI extends Frame {
 		
 		frame.addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent event) {
-				counter.close(CounterGUI.this);
+				CounterGUI.this.counter.close(CounterGUI.this);
 				frame.dispose();
 			}
 		});
@@ -40,7 +40,7 @@ public class CounterGUI extends Frame {
 			
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				counter.stop();
+				CounterGUI.this.counter.stop();
 			}
 		});
 		frame.add(btnStop);
@@ -50,7 +50,7 @@ public class CounterGUI extends Frame {
 			
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				counter.start();
+				CounterGUI.this.counter.start();
 			}
 		});
 		frame.add(btnStart);
@@ -60,7 +60,7 @@ public class CounterGUI extends Frame {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				counter.close(CounterGUI.this);
+				CounterGUI.this.counter.close(CounterGUI.this);
 				frame.dispose();
 			}
 		});
@@ -71,7 +71,7 @@ public class CounterGUI extends Frame {
 			
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				counter.copyCounter();
+				CounterGUI.this.counter.copyCounter();
 			}
 		});
 		frame.add(btnCopy);
@@ -81,7 +81,7 @@ public class CounterGUI extends Frame {
 			
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				counter.cloneCounter();
+				CounterGUI.this.counter.cloneCounter();
 			}
 		});
 		frame.add(btnClone);
