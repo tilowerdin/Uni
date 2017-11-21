@@ -57,16 +57,16 @@ public class ChatClient extends UnicastRemoteObject implements IChatClient {
 	 */
 	public static void main(String[] args) throws WrongNumberArgsException {
 		
-		if(args.length < 3)
+		if(args.length < 2)
 			throw new WrongNumberArgsException(
 					"you need to pass three arguments to the program:\n" +
-					"ChatClient <host> <chat_name> <username>"
+					"ChatClient <host> <username>"
 					);
 		
 		try {
 			Registry reg = LocateRegistry.getRegistry(args[0]);
-			IChatServer server = (IChatServer) reg.lookup(args[1]);
-			ChatClient client = new ChatClient(server, args[2]);
+			IChatServer server = (IChatServer) reg.lookup(IChatServer.name);
+			ChatClient client = new ChatClient(server, args[1]);
 			client.run();
 		} catch (RemoteException e) {
 			System.out.println("Unable to find the hosts registry");
