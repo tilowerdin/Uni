@@ -1,10 +1,15 @@
 -module (chat).
 -export ([start/1,join/2]).
 
+setCookie() ->
+    erlang:set_cookie(node(), chatErlang1).
+
 start(Name) ->
+    setCookie(),
     configure(Name,[]).
 
 join(Name,Node) ->
+    setCookie(),
     {chat,Node}!{login,Name,self()},
     receive
         {loggedin,Clients} ->
