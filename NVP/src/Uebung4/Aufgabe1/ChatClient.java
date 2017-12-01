@@ -24,7 +24,8 @@ public class ChatClient extends UnicastRemoteObject implements IChatClient {
 
 	@Override
 	public void getMessage(String msg) throws RemoteException {
-		System.out.println(msg);
+		System.out.print("\r");
+		System.out.print(msg + "\n");
 	}
 
 	public void run() {
@@ -33,7 +34,7 @@ public class ChatClient extends UnicastRemoteObject implements IChatClient {
 			server.login(this, name);
 			boolean connected = true;
 			Scanner in = new Scanner(System.in);
-			System.out.println("Welcome in our ChatRoom. Type ':q' to leave.");
+			System.out.print("Welcome in our ChatRoom. Type ':q' to leave.\n");
 			while (connected) {
 				String msg = in.nextLine();
 				switch (msg) {
@@ -47,7 +48,7 @@ public class ChatClient extends UnicastRemoteObject implements IChatClient {
 			}
 			in.close();
 		} catch (RemoteException e) {
-			System.out.println("Connection to the server lost.");
+			System.out.print("Connection to the server lost.\n");
 		}
 	}
 	
