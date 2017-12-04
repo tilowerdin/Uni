@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<launchConfiguration type="org.erlide.backend.erlangProcess">
+<listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
+<listEntry value="/NVPErlang"/>
+</listAttribute>
+<listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_TYPES">
+<listEntry value="4"/>
+</listAttribute>
+<booleanAttribute key="org.eclipse.debug.ui.ATTR_LAUNCH_IN_BACKGROUND" value="false"/>
+<listAttribute key="org.eclipse.debug.ui.favoriteGroups">
+<listEntry value="org.eclipse.debug.ui.launchGroup.debug"/>
+<listEntry value="org.eclipse.debug.ui.launchGroup.run"/>
+</listAttribute>
+<stringAttribute key="org.erlide.core.arguments" value=""/>
+<booleanAttribute key="org.erlide.core.console" value="true"/>
+<stringAttribute key="org.erlide.core.cookie" value="erlide"/>
+<intAttribute key="org.erlide.core.debugFlags" value="4"/>
+<stringAttribute key="org.erlide.core.extra_args" value=""/>
+<stringAttribute key="org.erlide.core.function" value=""/>
+<booleanAttribute key="org.erlide.core.has_backend" value="false"/>
+<listAttribute key="org.erlide.core.interpretModules"/>
+<booleanAttribute key="org.erlide.core.loadAllNodes" value="true"/>
+<booleanAttribute key="org.erlide.core.longName" value="false"/>
+<stringAttribute key="org.erlide.core.module" value=""/>
+<stringAttribute key="org.erlide.core.nodeName" value="NVPErlang"/>
+<stringAttribute key="org.erlide.core.projects" value="NVPErlang"/>
+<stringAttribute key="org.erlide.core.runtime" value="erl9.1"/>
+<booleanAttribute key="org.erlide.core.startMe" value="true"/>
+<stringAttribute key="org.erlide.core.working_dir" value="D:/workspace/Uni/NVPErlang/src/"/>
+</launchConfiguration>

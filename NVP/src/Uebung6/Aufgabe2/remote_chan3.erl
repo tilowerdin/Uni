@@ -25,7 +25,8 @@ register_chan(RegistryHost, Name, Chan) ->
 start_port_listener() ->
 	{ok, LSock} = gen_tcp:listen(0, [list, {packet, line}, {reuseaddr,true}]),
 	KV_Store = spawn(fun() -> kv:kv_server() end),
-	spawn(fun() -> register(port_listener, self()), send_to_port_listener(localhost, inet:port(LSock)) end),
+	{ok, Port} = inet:port(LSock),
+	spawn(fun() -> register(port_listener, self()), send_to_port_listener(localhost, Port) end),
 	spawn(fun() -> port_listener(LSock, KV_Store) end).
 
 send_to_port_listener(Host, Port) ->

@@ -24,40 +24,41 @@ register_chan(RegistryHost, Name, Chan) ->
 		
 start_port_listener() ->
 	{ok, LSock} = gen_tcp:listen(0, [list, {packet, line}, {reuseaddr,true}]),
+  {ok, Port} = inet:port(LSock),
 	KV_Store = spawn(fun() -> kv:kv_server() end),
-	spawn(fun() -> register(port_listener, self()), send_to_port_listener(localhost, inet:port(LSock)) end),
-	spawn(fun() -> port_listener(LSock, KV_Store) end).
+	Chan_holder = spawn(fun() -> register(port_listener, self()), chan_holder(KV_Store, localhost, Port) end),
+	spawn(fun() -> port_listener(LSock, Chan_holder) end).
+			
+chan_holder(KV_Chans, Host, Port) ->
+  receive
+    {register, Name, Chan, Pid} -> case kv:tryStore(KV_Chans, Name, Chan) of
+                                     ok -> Pid ! {ok, Host, Port},
+                                           chan_holder(KV_Chans, Host, Port);
+                                     Error -> Pid ! error,
+                                              chan_holder(KV_Chans, Host, Port)
+                                   end;
+    {chanMessage, ChanName, Message} -> KV_Chans ! {lookup, ChanName, self()},
+                                        receive
+                                          nothing -> chan_holder(KV_Chans, Host, Port);
+                                          {just, Chan} -> write_chan(Chan, Message),
+                                                          chan_holder(KV_Chans, Host, Port)
+                                        end;
+    {error, socketclosed} -> unregister(port_listener)
+  end.
 
-send_to_port_listener(Host, Port) ->
-	receive
-		{register, Name, Chan, Pid} -> {ok, Sock} = gen_tcp:connect(Host, Port, [list, {packet, line}, {active, false}]),
-									   gen_tcp:send(Sock, serialize({register, Name, Chan}) ++ "\n"),
-									   {ok, Str} = gen_tcp:recv(Sock, 0),
-									   Pid ! deserialize(Str)
-	end,
-	send_to_port_listener(Host, Port).
-			 
-
-port_listener(LSock,KV_store) ->
+%% TODO should change the code here.. a normal receive should hold the kv-store and the tcp-listener just sends
+%% received messages to the normal process 
+port_listener(LSock,Chan_holder) ->
   case gen_tcp:accept(LSock) of
     {ok,Sock} ->
       receive
-        {tcp,_sock,MsgStr} ->
-           {remote_msg,Msg} = deserialize(MsgStr),
-		   case Msg of
-			   {chanMessage, ChanName, Message} -> KV_store ! {lookup, ChanName, self()},
-												   receive 
-													   nothing -> ok;
-													   {just,Chan} -> write_chan(Chan, Message)
-												   end;
-			   {register, Name, Chan} -> case kv:tryStore(KV_store, Name, Chan) of
-										   ok -> gen_tcp:send(Sock, serialize({ok, localhost, inet:port(LSock)}) ++ "\n");
-									       error -> gen_tcp:send(Sock, serialize(error) ++ "\n")
-								         end
-		   end,
-           gen_tcp:close(Sock),
-           port_listener(LSock,KV_store)
-      end
+        {tcp,_sock,MsgStr} -> {remote_msg,Msg} = deserialize(MsgStr),
+                              Chan_holder ! Msg,
+                              gen_tcp:close(Sock),
+                              port_listener(LSock, Chan_holder)
+      end;
+    {error, closed} -> base:printLn("warum zum teufel?"),
+                       Chan_holder ! {error, socketclosed}
   end.
 
 register_at_port(Name, Chan) ->
@@ -100,7 +101,7 @@ write_chan({remote_chan,Host,Port}, ChanName ,Msg) ->
       gen_tcp:close(Sock)
   end.
 
-serialize({local_chan,_}) -> {error, "this is not allowed anymore"};
+
 serialize(X) when is_atom(X) -> atom_to_list(X);
 serialize(X) when is_integer(X) -> integer_to_list(X);
 %serialize(X) when is_pid(X) -> pid_to_list(X);
