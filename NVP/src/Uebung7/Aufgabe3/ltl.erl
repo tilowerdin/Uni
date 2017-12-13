@@ -113,15 +113,17 @@ ltl(Phis,Asserts,Counts,Props,PropsHistory) ->
         true -> ltl(Phis,Asserts,Counts,Props,PropsHistory);
         false ->
           NewProps = [P|Props],
+          NewHistory = [NewProps|PropsHistory],
           Phis1 = lists:map(fun(Phi) -> check(step(Phi),NewProps) end, Phis),
-          {Phis2,Asserts2,Counts2} = analyze(Phis1,Asserts,Counts,PropsHistory),
-          ltl(Phis2,Asserts2,Counts2,NewProps,[NewProps|PropsHistory])
+          {Phis2,Asserts2,Counts2} = analyze(Phis1,Asserts,Counts,NewHistory),
+          ltl(Phis2,Asserts2,Counts2,NewProps,NewHistory)
       end;
     {releaseProp,P} ->
       NewProps = lists:delete(P,Props),
+      NewHistory = [NewProps|PropsHistory],
       Phis1 = lists:map(fun(Phi) -> check(step(Phi),NewProps) end, Phis),
-      {Phis2,Asserts2,Counts2} = analyze(Phis1,Asserts,Counts,PropsHistory),
-      ltl(Phis2,Asserts2,Counts2,NewProps,[NewProps|PropsHistory]);
+      {Phis2,Asserts2,Counts2} = analyze(Phis1,Asserts,Counts,NewHistory),
+      ltl(Phis2,Asserts2,Counts2,NewProps,NewHistory);
     status ->
       base:printLn("Unevaluated Assertions:"),
       lists:zipwith3(fun(Phi,Assert,Count) ->
@@ -137,7 +139,7 @@ releaseProp(P) -> ltl!{releaseProp,P}.
 status()       -> ltl!status.  
 
 falsified(Phi,C,PropsHistory) -> 
-  base:printLn("Assertion violated: "++showLTL(Phi)++"\nafter "++base:show(C)++"checks."),
+  base:printLn("Assertion violated: "++showLTL(Phi)++"  after "++base:show(C)++" checks."),
   base:printLn("The Path of Props leading to this error beginning with current Props: "),
   base:printLn(getPath(C,PropsHistory)),
   base:printLn(""),
