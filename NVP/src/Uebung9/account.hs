@@ -1,0 +1,72 @@
+import Control.Concurrent
+
+type Account = MVar Int
+
+newAccount :: Int -> IO Account
+newAccount am = do
+  newMVar am
+
+getBalance :: Account -> IO Int
+getBalance acc = do
+  readMVar acc
+
+deposit :: Account -> Int -> IO ()
+deposit acc am = do
+  bal <- takeMVar acc
+  putMVar acc (bal + am)
+
+withdraw :: Account -> Int -> IO Bool
+withdraw acc am = do
+  bal <- takeMVar acc
+  if bal >= am then do
+    putMVar acc (bal - am)
+    return True
+  else do
+    putMVar acc bal
+    return False
+
+transfer :: Account -> Account -> Int -> IO Bool
+transfer from to am = do
+  res <- withdraw from am
+  if res then do
+    deposit to am
+    return True
+  else
+    return False
+
+
+transfer2 :: Account -> Account -> Int -> IO Bool
+transfer2 from to am = do
+  balFrom <- takeMVar from
+  if balFrom >= am then do
+    deposit to am
+    putMVar from (balFrom - am)
+    return True
+  else do
+    putMVar from balFrom
+    return False
+
+collectedTransfer :: [Account] -> Account -> Int -> IO Bool
+collectedTransfer = error "to be defined"
+
+
+main = do 
+  k1 <- newAccount 100
+  k2 <- newAccount 100
+  forkIO (transferTest 1000 k1 k2)
+  transferTest 1000 k2 k1
+  getLine
+  bal1 <- getBalance k1
+  print bal1
+  bal2 <- getBalance k2
+  print bal2
+
+transferTest 0 _ _ = do
+  return ()
+transferTest n k1 k2 = do
+  res <- transfer2 k1 k2 1
+  if res then do
+    transferTest (n-1) k1 k2
+  else do
+    transferTest n k1 k2
+
