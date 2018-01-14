@@ -1,0 +1,22 @@
+-- \sigma = (S,F)
+-- S = { Bool, Int, Set a, a }
+-- F = { empty :: Set a,
+--       isEmpty :: Set a -> Bool,
+--       insert :: a (Set a) -> Set a,
+--       member :: a (Set a) -> Bool,
+--       delete :: a (Set a) -> Set a,
+--       union :: (Set a) (Set a) -> Set a,
+--       intersect :: (Set a) (Set a) -> Set a,
+--       size :: Set a -> Int,
+--       not :: Bool -> Bool }
+-- X = { x :: a,
+--    
+--       s :: Set a,
+--       s1 :: Set a,
+--       s2 :: Set a }
+-- E = { isEmpty empty,
+--       not (member x empty),
+--       size empty = 0,
+--       not (isEmpty (insert x s)),
+--       member x (insert x s),
+--       member y }

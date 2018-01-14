@@ -46,24 +46,6 @@ transfer2 from to am = do
     putMVar from balFrom
     return False
 
-collectedLimitedTransfer :: [Account] -> Account -> Int -> IO Bool
-collectedLimitedTransfer _        _    0  = return True
-collectedLimitedTransfer []       _    _  = return False
-collectedLimitedTransfer (acc:accs) goal am = do
-  bal <- takeMVar acc
-  if am > bal then do
-    trans <- collectedLimitedTransfer accs goal (am - bal)
-    if trans then do
-      deposit goal bal
-      putMVar acc 0
-      return True
-    else do
-      putMVar acc bal
-      return False
-  else do
-    deposit goal am
-    putMVar acc (bal - am)
-    return True
 
 main = do 
   k1 <- newAccount 100
@@ -84,4 +66,43 @@ transferTest n k1 k2 = do
     transferTest (n-1) k1 k2
   else do
     transferTest n k1 k2
+
+
+collectedLimitedTransfer :: [Account] -> Account -> Int -> IO Bool
+collectedLimitedTransfer _        _    0  = return True
+collectedLimitedTransfer []       _    _  = return False
+collectedLimitedTransfer (acc:accs) goal am = do
+  bal <- takeMVar acc
+  if am > bal then do
+    trans <- collectedLimitedTransfer accs goal (am - bal)
+    if trans then do
+      deposit goal bal
+      putMVar acc 0
+      return True
+    else do
+      putMVar acc bal
+      return False
+  else do
+    deposit goal am
+    putMVar acc (bal - am)
+    return True
+
+
+collectedTransferTest = do
+  a <- newAccount 50
+  b <- newAccount 10
+  c <- newAccount 35
+  d <- newAccount 0
+  forkIO (go 1000 [a,b,c,d] d 100)
+  go 1000 [c,b,a,d] d 100
+  getBalance a >>= print
+  getBalance b >>= print
+  getBalance c >>= print
+  getBalance d >>= print
+  where
+    go 0 _ _ _ = return ()
+    go n l g a = do
+      collectedLimitedTransfer l g a
+      go (n-1) l g a
+
 

@@ -44,9 +44,6 @@ transfer from to am = do
   else
     return False
 
-collectedTransfer :: [Account] -> Account -> Int -> IO Bool
-collectedTransfer = error "to be defined"
-
 main = do 
   k1 <- atomically (newAccount 100)
   k2 <- atomically (newAccount 100)
@@ -66,4 +63,39 @@ transferTest n k1 k2 = do
     transferTest (n-1) k1 k2
   else do
     transferTest n k1 k2
+
+collectedLimitedTransfer :: [Account] -> Account -> Int -> STM Bool
+collectedLimitedTransfer _        _    0  = return True
+collectedLimitedTransfer []       _    _  = return False
+collectedLimitedTransfer (acc:accs) goal am = do
+  bal <- getBalance acc
+  if am > bal then do
+    trans <- collectedLimitedTransfer accs goal (am - bal)
+    if trans then do
+      transfer acc goal bal
+      return True
+    else do
+      return False
+  else do
+    transfer acc goal am
+    return True
+
+
+collectedTransferTest = do
+  a <- atomically $ newAccount 50
+  b <- atomically $ newAccount 100
+  c <- atomically $ newAccount 35
+  d <- atomically $ newAccount 0
+  forkIO (go 1000 [a,b,c,d] d 100)
+  go 1000 [c,b,a,d] d 100
+  atomically (getBalance a) >>= print
+  atomically (getBalance b) >>= print
+  atomically (getBalance c) >>= print
+  atomically (getBalance d) >>= print
+  where
+    go 0 _ _ _ = return ()
+    go n l g a = do
+      atomically $ collectedLimitedTransfer l g a
+      go (n-1) l g a
+
 
