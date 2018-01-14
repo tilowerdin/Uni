@@ -2,7 +2,7 @@
 %%% @author Tilo
 %%% @copyright (C) 2018, <COMPANY>
 %%% @doc
-%%% @todo: remove keyboard process...
+%%%
 %%% @end
 %%% Created : 12. Jan 2018 20:19
 %%%-------------------------------------------------------------------
@@ -24,7 +24,7 @@ keyboard(Name, Client) ->
   receive
     destroy -> ok
   after
-    0 -> Input = getLn(Name++": "),
+    1 -> Input = getLn(Name++": "),
       Client ! {input,Input},
       keyboard(Name, Client)
   end.
@@ -40,7 +40,7 @@ start(Name,Node) ->
   out(S, {message, Name ++ " logged in!", [self()]}, 10000000),
   out(S, {loggedin, [Name|Clients]}, -1),
   Me = self(),
-  Keyboard = spawn_link(fun() -> keyboard(Name, Me) end),
+  Keyboard = spawn_link(fun() -> process_flag(trap_exit, false), keyboard(Name, Me) end),
   spawn_link(fun() -> receiving_loop(Me, S) end),
   loop(Name, S, Keyboard).
 
@@ -63,7 +63,8 @@ loop(Name, S, Keyboard) ->
                         ":q" -> Clients = in(S, fun({loggedin, X}) -> X end, -1),
                           NewClients = lists:delete(Name,Clients),
                           out(S,{loggedin, NewClients}, -1),
-                          Keyboard ! destroy;
+                          Keyboard ! destroy,
+                          printLn("logged out");
                         _ -> out(S, {message, Name ++ "\: " ++ Input, [self()]}, 10000000),
                           loop(Name, S, Keyboard)
                       end;
