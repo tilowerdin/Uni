@@ -1,0 +1,52 @@
+* entspricht der Komposition
+
+1.
+
+t_0 = f(g(X,Y),Z,h(Z)).
+t_1 = f(Z,g(Y,X),h(g(a,b))).
+
+k = 0; s_0 = {}
+
+ds(t_0, t_1) = {g(X,Y), Z}
+k = 1; s_1 = {Z -> g(X,Y)}
+
+t_0 s_1 = f(g(X,Y), g(X,Y), h(g(X,Y)))
+t_1 s_1 = f(g(X,Y), g(Y,X), h(g(a,b)))
+
+ds(t_0 s_1, t_1 s_1) = {X,Y}
+k = 2; s_2 = {X -> Y} * s_1 = {Z -> g(Y,Y), X -> Y}
+
+t_0 s_2 = f(g(Y,Y), g(Y,Y), h(g(Y,Y)))
+t_1 s_2 = f(g(Y,Y), g(Y,Y), h(g(a,b)))
+
+ds(t_0 s_2, t_1 s_2) = {Y,a}
+k = 3; s_3 = {Y -> a} * s_2 = {Z -> g(a,a), X -> a, Y -> a}
+
+t_0 s_3 = f(g(a,a), g(a,a), h(g(a,a)))
+t_1 s_3 = f(g(a,a), g(a,a), h(g(a,b)))
+
+ds(t_0 s_3, t_1 s_3) = {a,b}
+
+-> keine Variable im "disagreement set": 'fail'
+
+
+2.
+
+s_0 = {}
+s_1 = {X -> g(Y)}
+ds(t_0 s_1, t_1 s_1) = {g(g(Y)),Y}
+
+occur check: Y kommt auch in g(g(Y)) vor: 'fail'
+
+
+3.
+
+s_0 = {}
+s_1 = {B -> g(A,A)}
+s_2 = {B -> g(A,A), C -> g(g(A,A), g(A,A))}
+s_3 = {B -> g(A,A), C -> g(g(A,A), g(A,A)), D -> g(g(g(A,A), g(A,A)), g(g(A,A), g(A,A)))}
+
+t_0 s_3 = f(g(A,A), g(g(A,A), g(A,A)), g(g(g(A,A), g(A,A)), g(g(A,A), g(A,A))))
+t_1 s_3 = f(g(A,A), g(g(A,A), g(A,A)), g(g(g(A,A), g(A,A)), g(g(A,A), g(A,A))))
+
+da t_0 s_3 = t_1 s_3: s_3 ist allgemeinster Unifikator (mgu)

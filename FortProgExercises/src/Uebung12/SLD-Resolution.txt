@@ -1,0 +1,35 @@
+1.
+
+append([]   ,L,L     ) .
+append([E|R],L,[E|RL]) :- append(R,L,RL).
+
+?- append(X,Y,[1,2]).
+   |   \
+   *1   *2
+        |  \
+        *3  *4
+            |
+            *5
+
+*1: ?- . % Erfolg mit X = [], Y = [1,2]
+*2: ?- append(X1,Y,[2]). % mit X = [1 | X1]
+*3: ?- . % Erfolg mit X = [1], Y = [2]
+*4: ?- append(X2,Y,[]). % mit X = [1|X1], X1 = [2|X2]
+*5: ?- . % Erfolg mit X = [1,2], Y = []
+
+
+2.
+
+member(E, [X|_]) :- E = X.
+member(E, [_|Xs]) :- member(E, Xs).
+
+?- member(E,[1,2]).
+   |   \
+   *1  *2
+       |   \
+       *3   *4
+
+*1: ?- . % Erfolg mit E = 1
+*2: ?- member(E,[2]).
+*3: ?- . % Erfolg mit E = 2
+*4: ?- member(E,[]). % Fehlschlag
