@@ -6,10 +6,10 @@ new_tvar(Value) -> spawn(fun() -> tvar(Value,0,[]) end).
 
 tvar(Value,Version,Susps) ->
   receive
-    {read,Pid} -> Pid!{value, Value, Version},
-                  tvar(Value,Version,Susps);
     {lock,Pid} -> Pid ! locked,
-                  tvar_locked(Value,Version,Susps)    
+                  tvar_locked(Value,Version,Susps);
+    {is_locked, Pid} -> Pid ! unlocked,
+                        tvar(Value,Version,Susps)
   end.
 
 tvar_locked(Value,Version,Susps) ->
@@ -20,8 +20,10 @@ tvar_locked(Value,Version,Susps) ->
                                    Susps),
                          tvar_locked(New_value,Version+1,[]);
     {newSusp,Susp}    -> tvar_locked(Value,Version,[Susp|Susps]);
-    unlock            -> tvar(Value,Version,Susps)
-  end.
+    unlock            -> tvar(Value,Version,Susps);
+    {is_locked, Pid} -> Pid ! locked,
+                        tvar(Value,Version,Susps)
+end.
 
 core_read(TVar) ->
   TVar!{read,self()},
@@ -39,9 +41,17 @@ lock(TVar) ->
 
 unlock(TVar) -> TVar!unlock.
 
+is_locked(TVar) ->
+  TVar!{is_locked, self()},
+  receive
+    locked -> true;
+    unlocked -> false
+  end.
+
 susp(TVar,P) -> TVar!{newSusp,P}. 
 
 read_tvar(TVar) ->
+  lock_or_rollback(TVar),
   {RS,WS} = get(state),
   case lookup(TVar,WS) of
     none      -> {value,V,Version} = core_read(TVar),
@@ -55,6 +65,7 @@ read_tvar(TVar) ->
   end. 
 
 write_tvar(TVar,Value) ->
+  lock_or_rollback(TVar),
   {RS,WS} = get(state),
   put(state,{RS,enter(TVar,Value,WS)}),
   ok.
@@ -64,32 +75,25 @@ retry() -> throw(retry).
 atomically(Transaction) ->
   put(state,{empty(),empty()}),
   case catch Transaction() of
-    rollback -> atomically(Transaction);
-    retry    -> {RS,_} = get(state),
-                TVars = keys(RS),
-                lock_l(TVars),
-                case validate(to_list(RS)) of
-                  true -> susps_l(TVars),
-                          unlock_l(TVars),
-                          receive
-                            {modified,_TVar} -> ok
-                          end;
-                  false -> unlock_l(TVars)
+    rollback -> {RS,WS} = get(state),
+                TVars = lists:umerge(keys(RS), keys(WS)),
+                unlock_l(TVars),
+                atomically(Transaction);
+    retry    -> {RS,WS} = get(state),
+                R_tvars = keys(RS),
+                TVars = lists:umerge(R_tvars, keys(WS)),
+                susps_l(R_tvars),
+                unlock_l(TVars),
+                receive
+                  {modified,_TVar} -> ok
                 end,
                 atomically(Transaction);
     Res      -> {RS,WS} = get(state),
                 TVars = lists:umerge(keys(RS),keys(WS)),
-		            lock_l(TVars),
-                case validate(to_list(RS)) of
-                  true -> commit(to_list(WS)),
-                          unlock_l(TVars),
-                          Res;
-                  false -> unlock_l(TVars),
-                           atomically(Transaction)
-                end
+                commit(to_list(WS)),
+                unlock_l(TVars),
+                Res
   end.
-
-lock_l(TVars) -> lists:map(fun(TVar) -> lock(TVar) end, TVars).
 
 unlock_l(TVars) -> lists:map(fun(TVar) -> unlock(TVar) end, TVars).
 
@@ -100,13 +104,35 @@ susps_l(TVars) -> Me = self(),
                               end end), 
                   lists:map(fun(TVar) -> susp(TVar,P) end, TVars).
 
-validate([]) -> true;
-validate([{TVar,Version}|RS]) ->
-  {value,_,Act_version} = core_read(TVar),
-  Act_version==Version andalso validate(RS).
-
 commit(WS) -> lists:map(fun({TVar,V}) -> core_write(TVar,V) end, WS).
 
+lock_or_rollback(TVar) ->
+  {RS, WS} = get(state),
+  TVars = lists:umerge(keys(RS), keys(WS)),
+  case lists:member(TVar, TVars) of
+    true -> true;
+    false -> case is_locked(TVar) of
+               true -> try_lock(TVar,1000);
+               false -> lock(TVar),
+                 true
+             end
+  end.
 
+try_lock(TVar,TimeOut) ->
+  Me = self(),
+  spawn(fun() -> try_lock_helper(TVar,TimeOut,Me) end),
+  receive
+    lock -> true;
+    no_lock -> throw(rollback)
+  end.
 
-
+try_lock_helper(TVar, TimeOut, Pid) ->
+  TVar!{lock,self()},
+  receive
+    locked -> Pid!lock
+  after
+    TimeOut -> Pid!no_lock,
+               receive
+                 locked -> TVar!unlock
+               end
+  end.
