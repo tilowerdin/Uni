@@ -73,7 +73,7 @@ atomically(Transaction) ->
                           unlock_l(TVars),
                           receive
                             {modified,_TVar} -> ok
-                          end,
+                          end;
                   false -> unlock_l(TVars)
                 end,
                 atomically(Transaction);
