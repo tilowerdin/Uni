@@ -19,7 +19,13 @@ tvar_locked(Value,Version,Susps) ->
     {write,New_value} -> lists:map(fun(Susp) -> Susp!{modified,self()} end,
                                    Susps),
                          tvar_locked(New_value,Version+1,[]);
-    {newSusp,Susp}    -> tvar_locked(Value,Version,[Susp|Susps]);
+    {newSusp,Susp,MyVersion} ->
+      case MyVersion of
+        Version -> Susp!susp,
+          tvar_locked(Value,Version,[Susp|Susps]);
+        _ -> Susp!{modified,self()},
+          tvar_locked(Value,Version, Susps)
+      end;
     unlock            -> tvar(Value,Version,Susps)
   end.
 
@@ -39,7 +45,12 @@ lock(TVar) ->
 
 unlock(TVar) -> TVar!unlock.
 
-susp(TVar,P) -> TVar!{newSusp,P}. 
+susp(TVar,P,MyVersion) ->
+  TVar!{newSusp,P,MyVersion},
+  receive
+    susp -> susp;
+    {modified,Pid} -> P!{modified,Pid}
+  end.
 
 read_tvar(TVar) ->
   {RS,WS} = get(state),
@@ -67,14 +78,9 @@ atomically(Transaction) ->
     rollback -> atomically(Transaction);
     retry    -> {RS,_} = get(state),
                 TVars = keys(RS),
-                lock_l(TVars),
-                case validate(to_list(RS)) of
-                  true -> susps_l(TVars),
-                          unlock_l(TVars),
-                          receive
-                            {modified,_TVar} -> ok
-                          end;
-                  false -> unlock_l(TVars)
+                susps_l(to_list(RS)),
+                receive
+                  {modified,_TVar} -> ok
                 end,
                 atomically(Transaction);
     Res      -> {RS,WS} = get(state),
@@ -98,7 +104,7 @@ susps_l(TVars) -> Me = self(),
                               receive
                                {modified,TVar} -> Me!{modified,TVar}
                               end end), 
-                  lists:map(fun(TVar) -> susp(TVar,P) end, TVars).
+                  lists:map(fun({TVar,Version}) -> susp(TVar,P,Version) end, TVars).
 
 validate([]) -> true;
 validate([{TVar,Version}|RS]) ->
