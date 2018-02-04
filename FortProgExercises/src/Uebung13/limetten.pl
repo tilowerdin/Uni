@@ -1,5 +1,3 @@
-:- module(limetten, [limetten/1]).
-
 :- use_module(library(clpr)).
 :- use_module(limetten_int).
 

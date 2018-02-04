@@ -33,10 +33,7 @@ each_distinct([R|Rows]) :-
   all_different(R),
   each_distinct(Rows).
  
-
-
 % transformieren
-
 trans(X,X) :-
   empty_lists(X).
 trans([R|Rows],[C|Cols]) :-
@@ -50,16 +47,15 @@ mySplit([Elem|Elems],[RowTail|RowTails],[[Elem|RowTail]|Rows]) :-
 empty_lists([]).
 empty_lists([[]|Ls]) :- empty_lists(Ls).
 
-
 % 3x3 quadrate in listen fassen
 squaresOf9([],[]).
-squaresOf9([F,S,T|Rows],Squares) :-
-  threes(FF,SF,TF,F),
+squaresOf9([F,S,T|Rows],Squares) :- %First, Second, Third
+  threes(FF,SF,TF,F), % Firstthree of First, Secondthree of First,...
   threes(FS,SS,TS,S),
   threes(FT,ST,TT,T),
 
-  append(FF,FS,FH),
-  append(FH,FT,FSquare),
+  append(FF,FS,FH), %First square Half ready
+  append(FH,FT,FSquare), % First Square
 
   append(SF,SS,SH),
   append(SH,ST,SSquare),
@@ -67,7 +63,7 @@ squaresOf9([F,S,T|Rows],Squares) :-
   append(TF,TS,TH),
   append(TH,TT,TSquare),
 
-  append([FSquare],[SSquare],HSquare),
+  append([FSquare],[SSquare],HSquare), %list of Squares Half ready
   append(HSquare,[TSquare],SomeSquares),
 
   append(SomeSquares,MoreSquares,Squares),
@@ -75,7 +71,6 @@ squaresOf9([F,S,T|Rows],Squares) :-
   squaresOf9(Rows,MoreSquares).
   
 threes([A,B,C],[D,E,F],[G,H,I],[A,B,C,D,E,F,G,H,I]).
-
 
 start(Puzzle) :-
   Puzzle =
